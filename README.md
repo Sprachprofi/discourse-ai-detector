@@ -34,8 +34,8 @@ fails the post simply has no banner.
 ### What gets checked
 
 - New posts in public topics.
-- Edited posts, one minute after the edit, but only if the text actually
-  changed. A burst of quick edits costs one check.
+- Edited posts, 10 minutes after the edit, but only if the text actually
+  changed. An author who keeps revising is checked on their final text.
 
 Not checked:
 

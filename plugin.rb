@@ -66,11 +66,12 @@ after_initialize do
     end
   end
 
-  # Wait a minute after an edit so a burst of quick edits costs one check: the
-  # later jobs see the same text as the first and skip it.
+  # Wait 10 minutes after an edit, so edits made within those 10 minutes are
+  # checked once, on the latest text: every job checks the post as it is when it
+  # runs, and jobs that find already-checked text skip it.
   on(:post_edited) do |post|
     if DiscourseAiDetector.checkable?(post)
-      Jobs.enqueue_in(1.minute, :ai_detector_check_post, post_id: post.id)
+      Jobs.enqueue_in(10.minutes, :ai_detector_check_post, post_id: post.id)
     end
   end
 
