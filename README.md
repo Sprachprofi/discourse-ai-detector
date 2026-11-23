@@ -104,7 +104,7 @@ for posts written before the plugin was installed:
 cd /var/discourse
 ./launcher enter app
 cd /var/www/discourse
-bin/rake "ai_detector:check_latest[100]"
+su discourse -c 'bundle exec rake "ai_detector:check_latest[100]"'
 ```
 
 Leaving out the number checks 50 posts. The task prints each post's score and
@@ -124,6 +124,31 @@ usage:
 - It works while `ai_detector_enabled` is off, so you can look at the scores
   before any banners appear.
 - An error on one post is shown as `ERR` and the task carries on.
+
+### Dry run
+
+To try the detector without touching the forum, add `dry_run`:
+
+```
+su discourse -c 'bundle exec rake "ai_detector:check_latest[100,dry_run]"'
+```
+
+The posts are scored and printed as usual, but nothing is saved: no banners
+appear or change, and running the task again later scores the same posts
+again. Each post is still sent to Claude, so a dry run costs the same as a
+normal one. Posts that were already scored in an earlier normal run are
+passed over as `(already checked)`.
+
+To try it before saving an API key in the admin settings, or with a different
+key, pass one in `ANTHROPIC_API_KEY`. It takes the place of the site setting
+for this run only:
+
+```
+su discourse -c 'ANTHROPIC_API_KEY=sk-ant-... bundle exec rake "ai_detector:check_latest[20,dry_run]"'
+```
+
+The key ends up in your shell history. Run `history -c` afterwards, or start
+the line with a space if your shell has `HISTCONTROL=ignorespace` set.
 
 ## Cost
 

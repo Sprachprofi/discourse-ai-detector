@@ -8,11 +8,14 @@ module ::DiscourseAiDetector
     # status: :skipped (not a post we check), :unchanged (this text was already
     # scored), :empty (nothing but quotes), :checked (result is set)
 
-    def initialize(checker = nil)
+    # api_key: use this instead of the ai_detector_anthropic_api_key setting.
+    def initialize(checker = nil, api_key: nil)
       @checker = checker
+      @api_key = api_key
     end
 
-    def call(post)
+    # dry_run: score the post but store nothing and leave the page alone.
+    def call(post, dry_run: false)
       return Outcome.new(status: :skipped) unless DiscourseAiDetector.checkable?(post)
 
       text = Checker.strip_quotes(post.raw)
@@ -22,6 +25,8 @@ module ::DiscourseAiDetector
       was_flagged = DiscourseAiDetector.flagged?(post.custom_fields[PROBABILITY_FIELD])
 
       result = checker.check(text)
+      return Outcome.new(status: result ? :checked : :empty, result: result) if dry_run
+
       post.custom_fields[DIGEST_FIELD] = digest
       if result
         post.custom_fields[PROBABILITY_FIELD] = result.probability
@@ -45,7 +50,7 @@ module ::DiscourseAiDetector
 
     def checker
       @checker ||= Checker.new(
-        api_key: SiteSetting.ai_detector_anthropic_api_key,
+        api_key: @api_key.presence || SiteSetting.ai_detector_anthropic_api_key,
         model: SiteSetting.ai_detector_model.presence || Checker::DEFAULT_MODEL,
       )
     end

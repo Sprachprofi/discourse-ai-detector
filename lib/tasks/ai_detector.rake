@@ -3,26 +3,45 @@
 # Checks the most recent posts right away, printing each score. Run from the
 # Discourse directory (inside the container: cd /var/www/discourse):
 #
-#   bin/rake "ai_detector:check_latest[100]"
+#   su discourse -c 'bundle exec rake "ai_detector:check_latest[100]"'
 #
 # Posts that wouldn't be checked automatically (PMs, staff posts, excluded
 # categories, ...) are passed over and don't count toward the number. Posts
 # whose text was already scored are counted but not sent again, so re-running
 # the task is cheap. Works even while ai_detector_enabled is off, so admins
 # can try it before showing banners.
-desc "Check the latest N posts for AI-generated text (default 50)"
-task "ai_detector:check_latest", [:count] => :environment do |_, args|
-  count = (args[:count] || 50).to_i
+#
+# Add dry_run to score posts without saving anything, so no banners appear
+# or change (the posts are still sent to Claude and cost tokens):
+#
+#   su discourse -c 'bundle exec rake "ai_detector:check_latest[100,dry_run]"'
+#
+# To use an API key other than the site setting's (for example to try the
+# plugin before saving a key in the admin panel), set ANTHROPIC_API_KEY:
+#
+#   su discourse -c 'ANTHROPIC_API_KEY=sk-ant-... bundle exec rake "ai_detector:check_latest[20,dry_run]"'
+desc "Check the latest N posts for AI-generated text (default 50); add dry_run to save nothing"
+task "ai_detector:check_latest", %i[count mode] => :environment do |_, args|
+  count = (args[:count].presence || 50).to_i
   abort "Count must be a positive number" unless count.positive?
-  abort "Set the ai_detector_anthropic_api_key site setting first" if SiteSetting.ai_detector_anthropic_api_key.blank?
+  mode = args[:mode].to_s.strip
+  abort "Unknown option #{mode.inspect}; the only option is dry_run" unless ["", "dry_run"].include?(mode)
+  dry_run = mode == "dry_run"
+  api_key = ENV["ANTHROPIC_API_KEY"].presence
+  if api_key.nil? && SiteSetting.ai_detector_anthropic_api_key.blank?
+    abort "Set the ai_detector_anthropic_api_key site setting first, or pass ANTHROPIC_API_KEY=..."
+  end
+  puts "Using the API key from ANTHROPIC_API_KEY." if api_key
 
-  unless SiteSetting.ai_detector_enabled
+  if dry_run
+    puts "Dry run: scores are printed but not saved, and no banners change."
+  elsif !SiteSetting.ai_detector_enabled
     puts "Note: ai_detector_enabled is off, so scores are stored but no banners show yet."
   end
 
   base_url = Discourse.base_url
   threshold = SiteSetting.ai_detector_threshold
-  checker = DiscourseAiDetector::PostChecker.new
+  checker = DiscourseAiDetector::PostChecker.new(api_key: api_key)
   counts = Hash.new(0)
   tokens = Hash.new(0)
   seen = 0
@@ -56,7 +75,7 @@ task "ai_detector:check_latest", [:count] => :environment do |_, args|
 
     label = "#{base_url}/p/#{post.id}"
     begin
-      outcome = checker.call(post)
+      outcome = checker.call(post, dry_run: dry_run)
     rescue DiscourseAiDetector::Checker::Error, Anthropic::Errors::APIError => e
       counts[:error] += 1
       puts format("  ERR  %s  %s", label, e.message.to_s.lines.first&.strip)
@@ -81,6 +100,7 @@ task "ai_detector:check_latest", [:count] => :environment do |_, args|
   puts
   puts "#{seen} posts: #{counts[:checked]} checked, #{counts[:unchanged]} already checked, " \
        "#{counts[:empty]} only quotes, #{counts[:error]} errors"
+  puts "Dry run: nothing was saved." if dry_run
   puts "#{counts[:flagged]} at or above #{threshold}% (marked *)"
   if counts[:checked].positive?
     puts "Tokens: #{tokens[:input_tokens]} input, #{tokens[:cache_read_tokens]} cache read, " \
