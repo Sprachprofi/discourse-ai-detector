@@ -187,3 +187,7 @@ LOAD_PLUGINS=1 bin/rspec plugins/discourse-ai-detector/spec      # inside a Disc
 | `app/jobs/regular/ai_detector_check_post.rb` | Background job |
 | `lib/tasks/ai_detector.rake` | `ai_detector:check_latest` |
 | `assets/javascripts/discourse/components/ai-detector-banner.gjs` | The banner |
+
+## License
+
+MIT, see [LICENSE](LICENSE).
