@@ -1,0 +1,5 @@
+en:
+  js:
+    ai_detector:
+      banner: "An automated check estimates a %{probability}% chance that this post was written by AI. The check can be wrong."
+      reasoning_staff: "Why? (visible to staff only)"

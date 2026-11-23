@@ -1,0 +1,23 @@
+plugins:
+  ai_detector_enabled:
+    default: false
+    client: true
+  ai_detector_anthropic_api_key:
+    default: ""
+    secret: true
+    client: false
+  ai_detector_model:
+    default: "claude-opus-5-5"
+    client: false
+  ai_detector_threshold:
+    default: 75
+    min: 0
+    max: 100
+    client: true
+  ai_detector_excluded_categories:
+    type: category_list
+    default: ""
+    client: false
+  ai_detector_banner_text:
+    default: ""
+    client: true

@@ -1,0 +1,8 @@
+en:
+  site_settings:
+    ai_detector_enabled: "Check new posts with Claude for AI-generated text"
+    ai_detector_anthropic_api_key: "Anthropic API key"
+    ai_detector_model: "Claude model used for the check"
+    ai_detector_threshold: "Show a warning banner when the AI probability is at or above this percentage"
+    ai_detector_excluded_categories: "Don't check posts in these categories (or their subcategories)"
+    ai_detector_banner_text: "Banner text shown on flagged posts. Use {probability} for the score, e.g. \"This post looks {probability}% AI-written.\" Leave blank for the default: \"An automated check estimates a N% chance that this post was written by AI. The check can be wrong.\""

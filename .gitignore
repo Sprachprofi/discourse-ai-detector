@@ -1,0 +1,4 @@
+discourse_posts_test.txt
+results*.json
+.ruby-lsp/
+node_modules/
